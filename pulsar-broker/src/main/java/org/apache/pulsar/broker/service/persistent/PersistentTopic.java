@@ -513,7 +513,7 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
                 } else {
                     final String subscriptionName = Codec.decode(cursor.getName());
                     subscriptions.put(subscriptionName, createPersistentSubscription(subscriptionName, cursor,
-                            PersistentSubscription.isCursorFromReplicatedSubscription(cursor),
+                            PersistentSubscription.isCursorFromReplicatedSubscription(cursor) ? true : null,
                             cursor.getCursorProperties()));
                     // subscription-cursor gets activated by default: deactivate as there is no active subscription
                     // right now
@@ -584,7 +584,7 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
     }
 
     private PersistentSubscription createPersistentSubscription(String subscriptionName, ManagedCursor cursor,
-            boolean replicated, Map<String, String> subscriptionProperties) {
+            Boolean replicated, Map<String, String> subscriptionProperties) {
         requireNonNull(topicCompactionService);
         if (isCompactionSubscription(subscriptionName)
                 && topicCompactionService instanceof PulsarTopicCompactionService pulsarTopicCompactionService) {
@@ -888,7 +888,7 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
                 option.getSubType(), option.getPriorityLevel(), option.getConsumerName(), option.isDurable(),
                 option.getStartMessageId(), option.getMetadata(), option.isReadCompacted(),
                 option.getInitialPosition(), option.getStartMessageRollbackDurationSec(),
-                option.isReplicatedSubscriptionStateArg(), option.getKeySharedMeta(),
+                option.getReplicatedSubscriptionStateArg(), option.getKeySharedMeta(),
                 option.getSubscriptionProperties().orElse(Collections.emptyMap()),
                 option.getConsumerEpoch(), option.getSchemaType());
     }
@@ -900,7 +900,7 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
                                                           Map<String, String> metadata, boolean readCompacted,
                                                           InitialPosition initialPosition,
                                                           long startMessageRollbackDurationSec,
-                                                          boolean replicatedSubscriptionStateArg,
+                                                          Boolean replicatedSubscriptionStateArg,
                                                           KeySharedMeta keySharedMeta,
                                                           Map<String, String> subscriptionProperties,
                                                           long consumerEpoch,
@@ -911,12 +911,9 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
         }
 
         return brokerService.checkTopicNsOwnership(getName()).thenCompose(__ -> {
-            boolean replicatedSubscriptionState = replicatedSubscriptionStateArg;
-
-            if (replicatedSubscriptionState
+            if (replicatedSubscriptionStateArg != null && replicatedSubscriptionStateArg
                     && !brokerService.pulsar().getConfiguration().isEnableReplicatedSubscriptions()) {
                 log.warn("[{}] Replicated Subscription is disabled by broker.", getName());
-                replicatedSubscriptionState = false;
             }
 
             if (subType == SubType.Key_Shared
@@ -985,7 +982,7 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
 
             CompletableFuture<? extends Subscription> subscriptionFuture = isDurable
                     ? getDurableSubscription(subscriptionName, initialPosition, startMessageRollbackDurationSec,
-                            replicatedSubscriptionState, subscriptionProperties)
+                    replicatedSubscriptionStateArg, subscriptionProperties)
                     : getNonDurableSubscription(subscriptionName, startMessageId, initialPosition,
                     startMessageRollbackDurationSec, readCompacted, subscriptionProperties);
 
@@ -1082,7 +1079,7 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
     private CompletableFuture<Subscription> getDurableSubscription(String subscriptionName,
                                                                    InitialPosition initialPosition,
                                                                    long startMessageRollbackDurationSec,
-                                                                   boolean replicated,
+                                                                   Boolean replicated,
                                                                    Map<String, String> subscriptionProperties) {
         CompletableFuture<Subscription> subscriptionFuture = new CompletableFuture<>();
         if (checkMaxSubscriptionsPerTopicExceed(subscriptionName)) {
@@ -1113,7 +1110,7 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
                         return;
                     }
                 }
-                if (replicated && !subscription.isReplicated()) {
+                if (replicated != null && replicated && !subscription.isReplicated()) {
                     // Flip the subscription state
                     subscription.setReplicated(replicated);
                 }
@@ -2066,9 +2063,13 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
         final CompletableFuture<Void> future = new CompletableFuture<>();
 
         String name = PersistentReplicator.getReplicatorName(replicatorPrefix, remoteCluster);
+        String replicationStartAt = getBrokerService().getPulsar().getConfiguration().getReplicationStartAt();
         final InitialPosition initialPosition;
-        if (MessageId.earliest.toString()
-                .equalsIgnoreCase(getBrokerService().getPulsar().getConfiguration().getReplicationStartAt())) {
+        // "MessageId.earliest.toString()" is "-1:-1:-1", which is not suggested, just guarantee compatibility with the
+        //  previous version.
+        // "InitialPosition.Earliest.name()" is "Earliest", which is suggested.
+        if (MessageId.earliest.toString().equalsIgnoreCase(replicationStartAt)
+                || InitialPosition.Earliest.name().equalsIgnoreCase(replicationStartAt)) {
             initialPosition = InitialPosition.Earliest;
         } else {
             initialPosition = InitialPosition.Latest;
@@ -2925,7 +2926,10 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
 
     @Override
     public CompletableFuture<Void> checkClusterMigration() {
-        if (ExtensibleLoadManagerImpl.isInternalTopic(topic)) {
+        TopicName topicName = TopicName.get(topic);
+        if (ExtensibleLoadManagerImpl.isInternalTopic(topic)
+                || isEventSystemTopic(topicName)
+                || NamespaceService.isHeartbeatNamespace(topicName.getNamespaceObject())) {
             return CompletableFuture.completedFuture(null);
         }
 
@@ -3627,7 +3631,8 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
         });
     }
 
-    private EstimateTimeBasedBacklogQuotaCheckResult estimatedTimeBasedBacklogQuotaCheck(
+    @VisibleForTesting
+    EstimateTimeBasedBacklogQuotaCheckResult estimatedTimeBasedBacklogQuotaCheck(
             Position markDeletePosition)
             throws ExecutionException, InterruptedException {
         int backlogQuotaLimitInSecond = getBacklogQuota(BacklogQuotaType.message_age).getLimitTime();
@@ -3646,7 +3651,8 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
 
         // if the mark-delete position is the last entry it means all entries for
         // that ledger are acknowledged
-        if (markDeletePosition.getEntryId() == markDeletePositionLedgerInfo.getEntries() - 1) {
+        if (markDeletePositionLedgerInfo != null
+                && (markDeletePosition.getEntryId() == markDeletePositionLedgerInfo.getEntries() - 1)) {
             Position positionToCheck = ledger.getNextValidPosition(markDeletePosition);
             positionToCheckLedgerInfo = ledger.getLedgerInfo(positionToCheck.getLedgerId()).get();
         }
