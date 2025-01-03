@@ -166,7 +166,7 @@ flexible messaging model and an intuitive client API.</description>
     <reflections.version>0.10.2</reflections.version>
     <swagger.version>1.6.2</swagger.version>
     <puppycrawl.checkstyle.version>10.14.2</puppycrawl.checkstyle.version>
-    <docker-maven.version>0.45.0</docker-maven.version>
+    <docker-maven.version>0.45.1</docker-maven.version>
     <docker.verbose>true</docker.verbose>
     <typetools.version>0.5.0</typetools.version>
     <byte-buddy.version>1.14.12</byte-buddy.version>
@@ -215,7 +215,7 @@ flexible messaging model and an intuitive client API.</description>
     <prometheus-jmx.version>0.16.1</prometheus-jmx.version>
     <confluent.version>6.2.8</confluent.version>
     <aircompressor.version>0.27</aircompressor.version>
-    <asynchttpclient.version>2.12.1</asynchttpclient.version>
+    <asynchttpclient.version>2.12.4</asynchttpclient.version>
     <commons-lang3.version>3.11</commons-lang3.version>
     <commons-configuration.version>1.10</commons-configuration.version>
     <commons-io.version>2.18.0</commons-io.version>
@@ -230,10 +230,9 @@ flexible messaging model and an intuitive client API.</description>
     <hppc.version>0.9.1</hppc.version>
     <spark-streaming_2.10.version>2.1.0</spark-streaming_2.10.version>
     <assertj-core.version>3.24.2</assertj-core.version>
-    <lombok.version>1.18.32</lombok.version>
+    <lombok.version>1.18.36</lombok.version>
     <jakarta.annotation-api.version>1.3.5</jakarta.annotation-api.version>
     <jaxb-api>2.3.1</jaxb-api>
-    <javax.activation.version>1.2.0</javax.activation.version>
     <jakarta.activation.version>1.2.2</jakarta.activation.version>
     <jakarta.xml.bind.version>2.3.3</jakarta.xml.bind.version>
     <jakarta.validation.version>2.0.2</jakarta.validation.version>
@@ -258,11 +257,11 @@ flexible messaging model and an intuitive client API.</description>
     <disruptor.version>3.4.3</disruptor.version>
     <zstd-jni.version>1.5.2-3</zstd-jni.version>
     <netty-reactive-streams.version>2.0.6</netty-reactive-streams.version>
-    <opentelemetry.version>1.44.1</opentelemetry.version>
+    <opentelemetry.version>1.45.0</opentelemetry.version>
     <opentelemetry.alpha.version>${opentelemetry.version}-alpha</opentelemetry.alpha.version>
     <opentelemetry.instrumentation.version>1.33.6</opentelemetry.instrumentation.version>
     <opentelemetry.instrumentation.alpha.version>${opentelemetry.instrumentation.version}-alpha</opentelemetry.instrumentation.alpha.version>
-    <opentelemetry.semconv.version>1.28.0-alpha</opentelemetry.semconv.version>
+    <opentelemetry.semconv.version>1.29.0-alpha</opentelemetry.semconv.version>
     <picocli.version>4.7.5</picocli.version>
     <re2j.version>1.7</re2j.version>
     <completable-futures.version>0.3.6</completable-futures.version>
@@ -1443,12 +1442,6 @@ flexible messaging model and an intuitive client API.</description>
 
       <dependency>
         <groupId>com.sun.activation</groupId>
-        <artifactId>javax.activation</artifactId>
-        <version>${javax.activation.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.sun.activation</groupId>
         <artifactId>jakarta.activation</artifactId>
         <version>${jakarta.activation.version}</version>
       </dependency>
@@ -2105,6 +2098,7 @@ flexible messaging model and an intuitive client API.</description>
             <exclude>**/*.so</exclude>
             <exclude>**/*.so.*</exclude>
             <exclude>**/*.dylib</exclude>
+            <exclude>**/*.patch</exclude>
             <exclude>src/test/resources/*.txt</exclude>
           </excludes>
         </configuration>
@@ -2586,6 +2580,7 @@ flexible messaging model and an intuitive client API.</description>
         <module>pulsar-metadata</module>
         <module>jetcd-core-shaded</module>
         <module>jclouds-shaded</module>
+        <module>pulsar-client-dependencies-minimized</module>
 
         <!-- package management releated modules (begin) -->
         <module>pulsar-package-management</module>
@@ -2651,6 +2646,7 @@ flexible messaging model and an intuitive client API.</description>
         <module>distribution</module>
         <module>pulsar-metadata</module>
         <module>jetcd-core-shaded</module>
+        <module>pulsar-client-dependencies-minimized</module>
         <!-- package management releated modules (begin) -->
         <module>pulsar-package-management</module>
         <!-- package management releated modules (end) -->

@@ -2154,6 +2154,11 @@ public class ServiceConfiguration implements PulsarConfiguration {
             doc = "The type of topic that is allowed to be automatically created.(partitioned/non-partitioned)"
     )
     private TopicType allowAutoTopicCreationType = TopicType.NON_PARTITIONED;
+    @FieldContext(category = CATEGORY_SERVER, dynamic = true,
+            doc = "If 'allowAutoTopicCreation' is true and the name of the topic contains 'cluster',"
+                    + "the topic cannot be automatically created."
+    )
+    private boolean allowAutoTopicCreationWithLegacyNamingScheme = true;
     @FieldContext(
         category = CATEGORY_STORAGE_ML,
         dynamic = true,
@@ -3534,6 +3539,12 @@ public class ServiceConfiguration implements PulsarConfiguration {
             doc = "The class name of the factory that implements the topic compaction service."
     )
     private String compactionServiceFactoryClassName = "org.apache.pulsar.compaction.PulsarCompactionServiceFactory";
+
+    @FieldContext(
+            category = CATEGORY_SERVER,
+            doc = "Opt-out of topic-existence check when setting permissions"
+    )
+    private boolean allowAclChangesOnNonExistentTopics = false;
 
     /**** --- KeyStore TLS config variables. --- ****/
     @FieldContext(
