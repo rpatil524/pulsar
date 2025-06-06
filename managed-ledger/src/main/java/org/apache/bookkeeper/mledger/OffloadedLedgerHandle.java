@@ -16,4 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.stats;
+package org.apache.bookkeeper.mledger;
+
+/**
+ *  This is a marked interface for ledger handle that represent offloaded data.
+ */
+public interface OffloadedLedgerHandle {
+
+    default long lastAccessTimestamp() {
+        return -1;
+    }
+
+    default int getPendingRead() {
+        return 0;
+    }
+}

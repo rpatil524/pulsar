@@ -1282,7 +1282,13 @@ public class BrokerService implements Closeable {
         deleteTopicAuthenticationWithRetry(topic, deleteTopicAuthenticationFuture, 5);
         deleteTopicAuthenticationFuture
         .thenCompose(__ -> deleteSchema(tn))
-        .thenCompose(__ -> pulsar.getTopicPoliciesService().deleteTopicPoliciesAsync(tn)).whenComplete((v, ex) -> {
+        .thenCompose(__ -> {
+            if (tn.isPartitioned()) {
+                return CompletableFuture.completedFuture(null);
+            }
+            return pulsar.getTopicPoliciesService().deleteTopicPoliciesAsync(tn);
+        })
+        .whenComplete((v, ex) -> {
             if (ex != null) {
                 future.completeExceptionally(ex);
                 return;
@@ -2089,6 +2095,10 @@ public class BrokerService implements Closeable {
             managedLedgerConfig.setLazyCursorRecovery(serviceConfig.isLazyCursorRecovery());
             managedLedgerConfig.setInactiveLedgerRollOverTime(
                     serviceConfig.getManagedLedgerInactiveLedgerRolloverTimeSeconds(), TimeUnit.SECONDS);
+            managedLedgerConfig.setInactiveOffloadedLedgerEvictionTime(
+                    serviceConfig.getManagedLedgerInactiveOffloadedLedgerEvictionTimeSeconds(),
+                    TimeUnit.SECONDS);
+
             managedLedgerConfig.setCacheEvictionByMarkDeletedPosition(
                     serviceConfig.isCacheEvictionByMarkDeletedPosition());
             managedLedgerConfig.setMinimumBacklogCursorsForCaching(
@@ -2532,9 +2542,19 @@ public class BrokerService implements Closeable {
 
 
     private void handleMetadataChanges(Notification n) {
-        if (!pulsar.isRunning()) {
+        if (pulsar.getState() != PulsarService.State.Started) {
+            String brokerId;
+            try {
+                brokerId = pulsar.getBrokerId();
+            } catch (Exception ex) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Failed to get brokerId", ex);
+                }
+                // If broker is not running, we cannot get brokerId.
+                brokerId = "unknown";
+            }
             // Ignore metadata changes when broker is not running
-            log.info("Ignoring metadata change since broker is not running (id={}, state={}) {}", pulsar.getBrokerId(),
+            log.info("Ignoring metadata change since broker is not running (id={}, state={}) {}", brokerId,
                     pulsar.getState(), n);
             return;
         }

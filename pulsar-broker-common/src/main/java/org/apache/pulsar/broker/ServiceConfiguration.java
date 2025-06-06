@@ -933,14 +933,6 @@ public class ServiceConfiguration implements PulsarConfiguration {
     private boolean isAllowAutoUpdateSchemaEnabled = true;
 
     @FieldContext(
-            category = CATEGORY_SERVER,
-            doc = "Whether to enable the automatic shrink of pendingAcks map, "
-                    + "the default is false, which means it is not enabled. "
-                    + "When there are a large number of share or key share consumers in the cluster, "
-                    + "it can be enabled to reduce the memory consumption caused by pendingAcks.")
-    private boolean autoShrinkForConsumerPendingAcksMap = false;
-
-    @FieldContext(
         category = CATEGORY_SERVER,
         dynamic = true,
         doc = "Enable check for minimum allowed client library version"
@@ -3422,6 +3414,14 @@ public class ServiceConfiguration implements PulsarConfiguration {
                 + "Disable rollover with value 0 (Default value 0)"
         )
     private int managedLedgerInactiveLedgerRolloverTimeSeconds = 0;
+
+    @FieldContext(
+            dynamic = true,
+            category = CATEGORY_STORAGE_ML,
+            doc = "Time to evict inactive offloaded ledger for inactive topic. "
+                    + "Disable eviction with value 0 (Default value 600)"
+    )
+    private int managedLedgerInactiveOffloadedLedgerEvictionTimeSeconds = 600;
 
     @FieldContext(
             category = CATEGORY_STORAGE_ML,

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.stats;
+package org.apache.pulsar.common.stats;
 
 import lombok.experimental.UtilityClass;
 
