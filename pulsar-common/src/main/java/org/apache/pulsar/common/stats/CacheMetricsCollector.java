@@ -16,30 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.common.naming;
+package org.apache.pulsar.common.stats;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import lombok.experimental.UtilityClass;
 
-/**
- */
 @UtilityClass
-public class NamedEntity {
-
-    // allowed characters for property, namespace, cluster and topic names are
-    // alphanumeric (a-zA-Z_0-9) and these special chars -=:.
-    // % is allowed as part of valid URL encoding
-    public static final Pattern NAMED_ENTITY_PATTERN = Pattern.compile("^[-=:.\\w]*$");
-
-    public static void checkName(String name) throws IllegalArgumentException {
-        if (!isAllowed(name)) {
-            throw new IllegalArgumentException("Invalid named entity: " + name);
-        }
-    }
-
-    public static boolean isAllowed(String name) {
-        Matcher m = NAMED_ENTITY_PATTERN.matcher(name);
-        return m.matches();
-    }
+public class CacheMetricsCollector {
+    public static final io.prometheus.client.cache.caffeine.CacheMetricsCollector CAFFEINE =
+        new io.prometheus.client.cache.caffeine.CacheMetricsCollector().register();
 }
